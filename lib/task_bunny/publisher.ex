@@ -48,7 +48,7 @@ defmodule TaskBunny.Publisher do
     end
   end
 
-  def exchange_publish!(host, queue, exchange, message, options \\ []) do
+  def exchange_publish!(host, exchange, queue, message, options \\ []) do
     Logger.debug("""
     TaskBunny.Publisher: publish
     #{host}:#{queue}: #{inspect(message)}. options = #{inspect(options)}
