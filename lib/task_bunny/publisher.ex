@@ -48,6 +48,14 @@ defmodule TaskBunny.Publisher do
     end
   end
 
+  @spec exchange_publish(atom, String.t(), String.t(), String.t(), keyword) :: :ok | {:error, any}
+  def exchange_publish(host, exchange, queue, message, options \\ []) do
+    exchange_publish!(host, exchange, queue, message, options)
+  rescue
+    e in [ConnectError, PublishError] -> {:error, e}
+  end
+
+  @spec exchange_publish!(atom, String.t(), String.t(), String.t(), keyword) :: :ok
   def exchange_publish!(host, exchange, queue, message, options \\ []) do
     Logger.debug("""
     TaskBunny.Publisher: publish
