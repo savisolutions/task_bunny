@@ -47,4 +47,21 @@ defmodule TaskBunny.Publisher do
       error -> raise PublishError, inner_error: error
     end
   end
+
+  def exchange_publish!(host, queue, exchange, message, options \\ []) do
+    Logger.debug("""
+    TaskBunny.Publisher: publish
+    #{host}:#{queue}: #{inspect(message)}. options = #{inspect(options)}
+    """)
+    options = Keyword.merge([persistent: true], options)
+
+    case :poolboy.transaction(
+           :publisher,
+           &GenServer.call(&1, {:publish, host, exchange, queue, message, options}),
+           @poolboy_timeout
+         ) do
+      :ok -> :ok
+      error -> raise PublishError, inner_error: error
+    end
+  end
 end
