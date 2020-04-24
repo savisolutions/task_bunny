@@ -61,6 +61,7 @@ defmodule TaskBunny.Publisher do
     TaskBunny.Publisher: publish
     #{host}:#{queue}: #{inspect(message)}. options = #{inspect(options)}
     """)
+
     options = Keyword.merge([persistent: true], options)
 
     case :poolboy.transaction(

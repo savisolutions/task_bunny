@@ -30,6 +30,7 @@ defmodule TaskBunny.PublisherWorker do
     case get_channel(host, state) do
       {:ok, channel, new_state} ->
         {:reply, AMQP.Basic.publish(channel, exchange, routing_key, message, options), new_state}
+
       error ->
         {:reply, error, state}
     end
