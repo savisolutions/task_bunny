@@ -6,6 +6,7 @@ defmodule TaskBunny.PublisherWorkerTest do
   @queue_name "task_bunny.test_queue"
 
   setup do
+    TaskBunny.Supervisor.start_link(TaskBunny)
     clean([@queue_name])
     {:ok, server_pid} = PublisherWorker.start_link("foo")
     {:ok, server: server_pid}

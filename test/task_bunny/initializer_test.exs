@@ -12,6 +12,8 @@ defmodule TaskBunny.InitializerTest do
   end
 
   setup do
+    TaskBunny.Supervisor.start_link(TaskBunny)
+
     clean(Queue.queue_with_subqueues(@queue))
     :meck.new(Config, [:passthrough])
     :meck.expect(Config, :queues, fn -> queues() end)

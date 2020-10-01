@@ -39,6 +39,8 @@ defmodule TaskBunny.SupervisorTest do
   end
 
   setup do
+    TaskBunny.Supervisor.start_link(TaskBunny)
+
     clean(Queue.queue_with_subqueues(@queue))
 
     mock_config()

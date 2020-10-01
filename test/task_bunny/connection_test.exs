@@ -4,6 +4,8 @@ defmodule TaskBunny.ConnectionTest do
   alias TaskBunny.{Connection, Config}
 
   setup do
+    TaskBunny.Supervisor.start_link(TaskBunny)
+
     on_exit(fn ->
       :meck.unload()
     end)

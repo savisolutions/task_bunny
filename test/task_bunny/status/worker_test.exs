@@ -46,6 +46,8 @@ defmodule TaskBunny.Status.WorkerTest do
   end
 
   setup do
+    TaskBunny.Supervisor.start_link(TaskBunny)
+
     clean(all_queues())
 
     mock_config()

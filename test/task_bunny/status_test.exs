@@ -21,6 +21,8 @@ defmodule TaskBunny.StatusTest do
   end
 
   setup do
+    TaskBunny.Supervisor.start_link(TaskBunny)
+
     clean(Queue.queue_with_subqueues(@queue))
     Queue.declare_with_subqueues(:default, @queue)
 

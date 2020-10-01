@@ -6,6 +6,7 @@ defmodule TaskBunny.PublisherTest do
   @queue_name "task_bunny.test_queue"
 
   setup do
+    TaskBunny.Supervisor.start_link(TaskBunny)
     clean([@queue_name])
     :ok
   end

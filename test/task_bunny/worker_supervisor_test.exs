@@ -33,6 +33,8 @@ defmodule TaskBunny.WorkerSupervisorTest do
   end
 
   setup do
+    TaskBunny.Supervisor.start_link(TaskBunny)
+
     clean(Queue.queue_with_subqueues(@queue))
     JobTestHelper.setup()
     Queue.declare_with_subqueues(:default, @queue)

@@ -28,6 +28,8 @@ defmodule TaskBunny.ConfigTest do
   end
 
   setup do
+    TaskBunny.Supervisor.start_link(TaskBunny)
+
     :meck.new(Application, [:passthrough])
     :meck.expect(Application, :get_all_env, fn :task_bunny -> test_config() end)
 

@@ -1,7 +1,7 @@
 defmodule TaskBunny.Mixfile do
   use Mix.Project
 
-  @version "0.4.0"
+  @version "0.5.0"
   @description "Background processing application/library written in Elixir that uses RabbitMQ as a messaging backend"
 
   def project do
@@ -60,13 +60,6 @@ defmodule TaskBunny.Mixfile do
       ],
       licenses: ["MIT"],
       links: %{"Github" => "https://github.com/shinyscorpion/task_bunny"}
-    ]
-  end
-
-  def application do
-    [
-      extra_applications: [:logger],
-      mod: {TaskBunny, []}
     ]
   end
 
