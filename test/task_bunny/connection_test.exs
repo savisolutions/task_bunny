@@ -1,18 +1,21 @@
 defmodule TaskBunny.ConnectionTest do
   use ExUnit.Case, async: false
 
-  alias TaskBunny.{Connection, Config}
+  alias TaskBunny.{Connection, Config, JobTestHelper.TestJob}
+
+  setup_all do
+    {:ok, _pid} = TaskBunny.SupervisorHelper.start_taskbunny(workers: [TestJob])
+    on_exit(fn -> TaskBunny.SupervisorHelper.tear_down() end)
+    :ok
+  end
 
   setup do
-    TaskBunny.Supervisor.start_link(TaskBunny)
-
-    on_exit(fn ->
-      :meck.unload()
-    end)
+    on_exit(fn -> :meck.unload() end)
   end
 
   describe "get_connection" do
     test "returns AMQP connection" do
+      Connection.subscribe_connection(:default, self())
       {:ok, conn} = Connection.get_connection(:default)
       assert %AMQP.Connection{} = conn
     end

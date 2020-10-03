@@ -10,6 +10,10 @@ defmodule TaskBunny.JobTestHelper do
   defmodule TestJob do
     use TaskBunny.Job
 
+    def host, do: :default
+
+    def queue, do: "test"
+
     def perform(payload) do
       Tracer.performed(payload)
 

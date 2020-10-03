@@ -4,16 +4,13 @@ defmodule TaskBunny.SupervisorTest do
   alias TaskBunny.{Config, Connection, Queue, JobTestHelper}
   alias JobTestHelper.TestJob
 
-  @host :sv_test
-  @queue "task_bunny.supervisor_test"
+  @host TestJob.host()
+  @queue TestJob.queue_name()
 
   defp mock_config do
-    worker = [host: @host, queue: @queue, concurrency: 1]
-
     :meck.new(Config, [:passthrough])
     :meck.expect(Config, :hosts, fn -> [@host] end)
     :meck.expect(Config, :connect_options, fn @host -> "amqp://localhost" end)
-    :meck.expect(Config, :workers, fn -> [worker] end)
   end
 
   defp wait_for_process_died(pid) do
@@ -38,15 +35,23 @@ defmodule TaskBunny.SupervisorTest do
     end)
   end
 
-  setup do
-    TaskBunny.Supervisor.start_link(TaskBunny)
+  setup_all do
+    {:ok, _pid} =
+      TaskBunny.SupervisorHelper.start_taskbunny(
+        workers: [TestJob],
+        publisher: {:publisher, [TestJob]}
+      )
 
+    on_exit(fn -> TaskBunny.SupervisorHelper.tear_down() end)
+    :ok
+  end
+
+  setup do
     clean(Queue.queue_with_subqueues(@queue))
 
     mock_config()
     JobTestHelper.setup()
 
-    TaskBunny.Supervisor.start_link(:supevisor_test, :wsv_supervisor_test, :ps_supervisor_test)
     JobTestHelper.wait_for_connection(@host)
     Queue.declare_with_subqueues(:default, @queue)
 
@@ -57,9 +62,11 @@ defmodule TaskBunny.SupervisorTest do
     :ok
   end
 
+  #  FIXME have somehow broke this test
   test "starts connection and worker" do
     payload = %{"hello" => "world"}
-    TestJob.enqueue(payload, host: @host, queue: @queue)
+    TestJob.enqueue(payload)
+    Process.sleep(1000)
 
     JobTestHelper.wait_for_perform()
     assert List.first(JobTestHelper.performed_payloads()) == payload

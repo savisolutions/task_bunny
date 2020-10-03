@@ -5,6 +5,8 @@ defmodule TaskBunny.MessageTest do
   defmodule NameJob do
     use TaskBunny.Job
 
+    def queue, do: "test"
+
     def perform(payload), do: {:ok, payload["name"]}
   end
 
@@ -47,7 +49,7 @@ defmodule TaskBunny.MessageTest do
         error_type: :return_value,
         return_value: {:error, :test_error},
         failed_count: 0,
-        stacktrace: System.stacktrace(),
+        stacktrace: ["Fake stack trace"],
         raw_body: "abcdefg"
       }
 

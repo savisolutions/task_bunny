@@ -10,26 +10,45 @@ defmodule TaskBunny.WorkerSupervisor do
   you to shutdown the worker processes safely.
   """
   use Supervisor
-  alias TaskBunny.{Config, Worker}
+  alias TaskBunny.{Initializer, Worker}
 
   @doc false
-  @spec start_link(atom) :: {:ok, pid} | {:error, term}
-  def start_link(name \\ __MODULE__) do
-    Supervisor.start_link(__MODULE__, [], name: name)
+  @spec start_link(Keyword.t()) :: {:ok, pid} | {:error, term}
+  def start_link(opts) do
+    name = Keyword.get(opts, :name, __MODULE__)
+    queues = Keyword.get(opts, :queues, [])
+    # FIXME do we want this here?
+    Enum.each(queues, &Initializer.declare_queue/1)
+
+    Supervisor.start_link(__MODULE__, queues, name: name)
   end
+
+  defp queues_with_configuration(queues), do: Enum.map(queues, &queue_with_configuration/1)
+
+  defp queue_with_configuration(job) do
+    [
+      queue: job.queue_name(),
+      concurrency: job.concurrency() || default_concurrency(),
+      store_rejected_jobs: job.store_rejected_jobs?(),
+      host: job.host() || :default
+    ]
+  end
+
+  defp default_concurrency, do: Application.get_env(:task_bunny, :default_concurrency, 2)
 
   @doc false
   @spec init(list) :: {:ok, {:supervisor.sup_flags(), [Supervisor.Spec.spec()]}} | :ignore
-  def init([]) do
-    Config.workers()
-    |> Enum.map(fn config ->
-      worker(
-        Worker,
-        [config],
-        id: "task_bunny.worker.#{config[:queue]}"
-      )
-    end)
-    |> supervise(strategy: :one_for_one)
+  def init(queues) do
+    children =
+      Enum.map(queues_with_configuration(queues), fn queue_config ->
+        worker(
+          Worker,
+          [queue_config],
+          id: "task_bunny.worker.#{queue_config[:queue]}"
+        )
+      end)
+
+    Supervisor.init(children, strategy: :one_for_one)
   end
 
   @doc """

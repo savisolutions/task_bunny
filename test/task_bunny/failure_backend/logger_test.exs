@@ -1,5 +1,5 @@
 defmodule TaskBunny.FailureBackend.LoggerTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias TaskBunny.JobError
   import TaskBunny.FailureBackend.Logger
   import ExUnit.CaptureLog

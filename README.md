@@ -434,12 +434,6 @@ config :task_bunny, queue: [
 ]
 ```
 
-If you don't want to start TaskBunny automatically in a specific environment, set `true` to `disable_auto_start` in the config:
-
-```elixir
-config :task_bunny, disable_auto_start: true
-```
-
 #### Get connection
 
 TaskBunny provides two ways to access the connections.

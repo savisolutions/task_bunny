@@ -4,14 +4,17 @@ defmodule TaskBunny.WorkerTest do
   alias TaskBunny.{Connection, Worker, Queue, JobTestHelper}
   alias JobTestHelper.TestJob
 
-  @queue "task_bunny.worker_test"
+  @queue "another"
 
   defp all_queues do
     Queue.queue_with_subqueues(@queue)
   end
 
-  defp start_worker() do
-    start_worker(%{concurrency: 1, store_rejected_jobs: true})
+  defp start_worker do
+    start_worker(%{
+      concurrency: TestJob.concurrency(),
+      store_rejected_jobs: TestJob.store_rejected_jobs?()
+    })
   end
 
   defp start_worker(%{concurrency: concurrency, store_rejected_jobs: store_rejected_jobs}) do
@@ -33,16 +36,23 @@ defmodule TaskBunny.WorkerTest do
     start_worker(%{concurrency: 1, store_rejected_jobs: store_rejected_jobs})
   end
 
-  setup do
-    TaskBunny.Supervisor.start_link(TaskBunny)
+  setup_all do
+    {:ok, _pid} =
+      TaskBunny.SupervisorHelper.start_taskbunny(
+        workers: [TestJob],
+        publisher: {:publisher, [TestJob]}
+      )
 
+    on_exit(fn -> TaskBunny.SupervisorHelper.tear_down() end)
+    :ok
+  end
+
+  setup do
     clean(all_queues())
     JobTestHelper.setup()
     Queue.declare_with_subqueues(:default, @queue)
 
-    on_exit(fn ->
-      JobTestHelper.teardown()
-    end)
+    on_exit(fn -> JobTestHelper.teardown() end)
 
     :ok
   end

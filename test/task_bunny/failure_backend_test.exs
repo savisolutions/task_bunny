@@ -1,5 +1,5 @@
 defmodule TaskBunny.FailureBackendTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
   alias TaskBunny.{JobError, FailureBackend}
   import ExUnit.{CaptureLog, CaptureIO}
 
@@ -34,7 +34,7 @@ defmodule TaskBunny.FailureBackendTest do
     Map.merge(@job_error, %{
       error_type: :exception,
       exception: RuntimeError.exception("Hello"),
-      stacktrace: System.stacktrace()
+      stacktrace: []
     })
   end
 

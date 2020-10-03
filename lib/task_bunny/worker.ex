@@ -185,26 +185,6 @@ defmodule TaskBunny.Worker do
 
   def handle_info(_msg, state), do: {:noreply, state}
 
-  # Retreive worker status
-  @spec handle_call(atom, {pid, any}, any) :: {:reply, map, t}
-  def handle_call(:status, _from, state) do
-    channel =
-      case state.channel do
-        nil -> false
-        _channel -> "#{state.queue} (#{state.consumer_tag})"
-      end
-
-    status = %TaskBunny.Status.Worker{
-      queue: state.queue,
-      runners: state.runners,
-      channel: channel,
-      stats: state.job_stats,
-      consuming: !is_nil(state.consumer_tag)
-    }
-
-    {:reply, status, state}
-  end
-
   @spec pname(String.t()) :: atom
   defp pname(queue) do
     String.to_atom("TaskBunny.Worker.#{queue}")

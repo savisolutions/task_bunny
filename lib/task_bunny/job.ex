@@ -71,6 +71,22 @@ defmodule TaskBunny.Job do
   """
 
   @doc """
+  Callback defining the queue name as a string for the job.
+  """
+  @callback queue() :: String.t()
+
+  @doc """
+  Callback defining the host for the job.
+  """
+  @callback host() :: atom() | nil
+
+  @callback concurrency() :: pos_integer()
+
+  @callback store_rejected_jobs?() :: boolean()
+
+  @callback namespace() :: String.t()
+
+  @doc """
   Callback to process a job.
 
   It can take any type of argument as long as it can be serialized with Jason,
@@ -122,7 +138,7 @@ defmodule TaskBunny.Job do
   @callback retry_interval(integer) :: integer
 
   require Logger
-  alias TaskBunny.{Config, Job, Message, Publisher, Queue}
+  alias TaskBunny.{Job, Message, Publisher, Queue}
 
   alias TaskBunny.{
     Connection.ConnectError,
@@ -133,6 +149,22 @@ defmodule TaskBunny.Job do
   defmacro __using__(_options \\ []) do
     quote do
       @behaviour Job
+
+      @doc false
+      @impl true
+      def namespace do
+        Application.get_env(:task_bunny, :queue)[:namespace] || ""
+      end
+
+      def queue_name, do: namespace() <> queue()
+
+      @doc false
+      @impl true
+      def concurrency, do: 2
+
+      @doc false
+      @impl true
+      def host, do: nil
 
       @doc false
       @spec enqueue(any, keyword) :: :ok | {:error, any}
@@ -149,24 +181,34 @@ defmodule TaskBunny.Job do
       # Returns timeout (default 2 minutes).
       # Override the method to change the timeout.
       @doc false
-      @spec timeout() :: integer
+      @impl true
       def timeout, do: 120_000
 
       # Retries 10 times in every 5 minutes by default.
       # You have to re-create the queue after you change retry_interval.
       @doc false
-      @spec max_retry() :: integer
+      @impl true
       def max_retry, do: 10
 
       @doc false
-      @spec retry_interval(integer) :: integer
+      @impl true
       def retry_interval(_failed_count), do: 300_000
 
       @doc false
-      @spec on_reject(any) :: :ok
+      @impl true
       def on_reject(_body), do: :ok
 
-      defoverridable timeout: 0, max_retry: 0, retry_interval: 1, on_reject: 1
+      @impl true
+      def store_rejected_jobs?, do: true
+
+      defoverridable concurrency: 0,
+                     host: 0,
+                     max_retry: 0,
+                     namespace: 0,
+                     on_reject: 1,
+                     retry_interval: 1,
+                     store_rejected_jobs?: 0,
+                     timeout: 0
     end
   end
 
@@ -198,12 +240,10 @@ defmodule TaskBunny.Job do
   """
   @spec enqueue!(atom, any, keyword) :: :ok
   def enqueue!(job, payload, options \\ []) do
-    queue_data = Config.queue_for_job(job) || []
-
-    host = options[:host] || queue_data[:host] || :default
+    host = options[:host] || job.host() || :default
     {:ok, message} = Message.encode(job, payload)
 
-    case options[:queue] || queue_data[:name] do
+    case options[:queue] || job.queue_name() do
       nil -> raise QueueNotFoundError, job: job
       queue -> do_enqueue(host, queue, message, options[:delay])
     end

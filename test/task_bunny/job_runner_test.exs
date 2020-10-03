@@ -1,10 +1,12 @@
 defmodule TaskBunny.JobRunnerTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
   alias TaskBunny.JobRunner
 
   defmodule SampleJobs do
     defmodule CrashJob do
       use TaskBunny.Job
+
+      def queue, do: "test"
 
       def perform(_payload) do
         raise "Oops"
@@ -13,6 +15,8 @@ defmodule TaskBunny.JobRunnerTest do
 
     defmodule TimeoutJob do
       use TaskBunny.Job
+
+      def queue, do: "test"
 
       def timeout, do: 10
 
@@ -25,6 +29,8 @@ defmodule TaskBunny.JobRunnerTest do
     defmodule NormalJob do
       use TaskBunny.Job
 
+      def queue, do: "test"
+
       def perform(_payload) do
         :ok
       end
@@ -33,6 +39,8 @@ defmodule TaskBunny.JobRunnerTest do
     defmodule ErrorJob do
       use TaskBunny.Job
 
+      def queue, do: "test"
+
       def perform(_payload) do
         {:error, "failed!"}
       end
@@ -40,6 +48,8 @@ defmodule TaskBunny.JobRunnerTest do
 
     defmodule PayloadJob do
       use TaskBunny.Job
+
+      def queue, do: "test"
 
       def perform(payload) do
         {:ok, payload}
