@@ -41,8 +41,15 @@ defmodule TaskBunny.PublisherWorker do
   """
   @spec terminate(any, map) :: :ok
   def terminate(_, state) do
-    state |> Map.values() |> Enum.each(&AMQP.Channel.close/1)
+    state |> Map.values() |> Enum.each(&close_channel/1)
   end
+
+  @spec close_channel(AMQP.Channel.t() | nil) :: false | :ok | {:error, {:error, :blocked | :closing}}
+  def close_channel(%AMQP.Channel{pid: pid} = channel) do
+    Process.alive?(pid) && AMQP.Channel.close(channel)
+  end
+
+  def close_channel(_), do: :ok
 
   defp get_channel(host, state) do
     if channel = state[host] do
