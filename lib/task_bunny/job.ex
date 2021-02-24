@@ -131,6 +131,12 @@ defmodule TaskBunny.Job do
   }
 
   defmacro __using__(_options \\ []) do
+    @fifteen_seconds 1_500
+    @one_minute 60_000
+    @two_minutes 120_000
+    @five_minutes 300_000
+    @ten_minutes 600_000
+
     quote do
       @behaviour Job
 
@@ -150,17 +156,23 @@ defmodule TaskBunny.Job do
       # Override the method to change the timeout.
       @doc false
       @spec timeout() :: integer
-      def timeout, do: 120_000
+      def timeout, do: @two_minutes
 
       # Retries 10 times in every 5 minutes by default.
       # You have to re-create the queue after you change retry_interval.
       @doc false
       @spec max_retry() :: integer
-      def max_retry, do: 10
+      def max_retry, do: 4
 
       @doc false
       @spec retry_interval(integer) :: integer
-      def retry_interval(_failed_count), do: 300_000
+      def retry_interval(failed_count) do
+        Enum.at(
+          [@fifteen_seconds, @one_minute, @five_minutes, @ten_minutes],
+          failed_count - 1,
+          1000
+        )
+      end
 
       @doc false
       @spec on_reject(any) :: :ok
@@ -205,22 +217,41 @@ defmodule TaskBunny.Job do
 
     case options[:queue] || queue_data[:name] do
       nil -> raise QueueNotFoundError, job: job
-      queue -> do_enqueue(host, queue, message, options[:delay])
+      queue -> do_enqueue!(host, queue, message, options[:delay])
     end
   end
 
-  @spec do_enqueue(atom, String.t(), String.t(), nil | integer) :: :ok
-  defp do_enqueue(host, queue, message, nil) do
-    Publisher.publish!(host, queue, message)
-  end
+  @spec do_enqueue!(atom, String.t(), String.t(), nil | integer) :: :ok
+  defp do_enqueue!(host, queue, message, delay, retry_count \\ 0) do
+    Task.async(fn ->
+      try do
+        {try_queue, options} =
+          if is_nil(delay) do
+            {queue, []}
+          else
+            scheduled_queue = Queue.scheduled_queue(queue)
+            delay_options = [expiration: "#{delay}"]
+            {scheduled_queue, delay_options}
+          end
 
-  defp do_enqueue(host, queue, message, delay) do
-    scheduled = Queue.scheduled_queue(queue)
+        Publisher.publish!(host, try_queue, message, options)
+      rescue
+        e -> e
+      end
+    end)
+    |> Task.await()
+    |> case do
+      :ok ->
+        :ok
 
-    options = [
-      expiration: "#{delay}"
-    ]
+      error ->
+        Logger.error(inspect(error))
 
-    Publisher.publish!(host, scheduled, message, options)
+        if retry_count < 4 do
+          do_enqueue!(module, map, opts, retry_count + 1)
+        else
+          raise error
+        end
+    end
   end
 end
