@@ -1,7 +1,7 @@
 defmodule TaskBunny.Mixfile do
   use Mix.Project
 
-  @version "0.4.0"
+  @version "0.4.7"
   @description "Background processing application/library written in Elixir that uses RabbitMQ as a messaging backend"
 
   def project do
@@ -75,11 +75,11 @@ defmodule TaskBunny.Mixfile do
 
   defp deps do
     [
-      {:amqp, "~> 1.3"},
+      {:amqp, "~> 4.0"},
       {:jason, "~> 1.1"},
 
       # dev/test
-      {:credo, "~> 1.4", only: [:dev]},
+      {:credo, "~> 1.7", only: [:dev]},
       {:dialyxir, "~> 1.0", only: [:dev], runtime: false},
       {:ex_doc, "~> 0.14", only: :dev},
       {:excoveralls, "~> 0.5", only: :test},
