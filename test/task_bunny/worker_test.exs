@@ -111,6 +111,56 @@ defmodule TaskBunny.WorkerTest do
       GenServer.stop(worker)
     end
 
+    test "queues the message to rejected even when on_reject callback raises" do
+      reset_test_job_retry_interval(5)
+
+      worker = start_worker()
+      [main, retry, rejected, _scheduled] = all_queues()
+      payload = %{"raise_while_on_reject" => true, "fail" => true, "ppid" => self() |> :erlang.term_to_binary() |> Base.encode64()}
+
+      TestJob.enqueue(payload, queue: @queue)
+      # 1 normal + 10 retries = 11
+      JobTestHelper.wait_for_perform(11)
+
+      assert_received :on_reject_callback_called
+
+      conn = Connection.get_connection!()
+      %{message_count: main_count} = Queue.state(conn, main)
+      %{message_count: retry_count} = Queue.state(conn, retry)
+      %{message_count: rejected_count} = Queue.state(conn, rejected)
+
+      assert main_count == 0
+      assert retry_count == 0
+      assert rejected_count == 1
+
+      GenServer.stop(worker)
+    end
+
+    test "queues the message to rejected even when on_reject callback throws" do
+      reset_test_job_retry_interval(5)
+
+      worker = start_worker()
+      [main, retry, rejected, _scheduled] = all_queues()
+      payload = %{"throw_while_on_reject" => true, "fail" => true, "ppid" => self() |> :erlang.term_to_binary() |> Base.encode64()}
+
+      TestJob.enqueue(payload, queue: @queue)
+      # 1 normal + 10 retries = 11
+      JobTestHelper.wait_for_perform(11)
+
+      assert_received :on_reject_callback_called
+
+      conn = Connection.get_connection!()
+      %{message_count: main_count} = Queue.state(conn, main)
+      %{message_count: retry_count} = Queue.state(conn, retry)
+      %{message_count: rejected_count} = Queue.state(conn, rejected)
+
+      assert main_count == 0
+      assert retry_count == 0
+      assert rejected_count == 1
+
+      GenServer.stop(worker)
+    end
+
     test "executes the on_reject callback only when rejected" do
       reset_test_job_retry_interval(5)
 
