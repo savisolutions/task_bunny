@@ -290,7 +290,19 @@ defmodule TaskBunny.Worker do
     :ok
   end
 
-  defp reject_callback(job, body), do: job.on_reject(body)
+  defp reject_callback(job, body) do
+    job.on_reject(body)
+  rescue
+    exception ->
+      Logger.error(
+        "TaskBunny.Worker - on_reject callback failed for #{job}\n#{Exception.format(:error, exception, __STACKTRACE__)}"
+      )
+  catch
+    kind, reason ->
+      Logger.error(
+        "TaskBunny.Worker - on_reject callback failed for #{job}\n#{Exception.format(kind, reason, __STACKTRACE__)}"
+      )
+  end
 
   defp log_msg(message, state, additional \\ nil) do
     message =

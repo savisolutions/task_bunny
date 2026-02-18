@@ -25,13 +25,14 @@ defmodule TaskBunny.JobTestHelper do
     def retry_interval(_), do: RetryInterval.interval()
 
     def on_reject(body) do
-      ppid =
-        body
-        |> Jason.decode!()
-        |> get_in(["payload", "ppid"])
+      message = Jason.decode!(body)
+      ppid = get_in(message, ["payload", "ppid"])
 
       ppid &&
         ppid |> Base.decode64!() |> :erlang.binary_to_term() |> send(:on_reject_callback_called)
+
+      if get_in(message, ["payload", "raise_while_on_reject"]), do: raise "fail while on_reject"
+      if get_in(message, ["payload", "throw_while_on_reject"]), do: throw "throw while on_reject"
 
       :ok
     end
